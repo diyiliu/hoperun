@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- 扫描注解 -->
+    <context:component-scan base-package="com.diyiliu"/>
+
+    <!-- 引入配置文件 -->
+    <context:property-placeholder location="classpath:config.properties"/>
+
+    <bean id="ftpClient" class="com.diyiliu.ftp.FtpClient">
+        <constructor-arg name="path" value="test"/>
+        <constructor-arg name="destination" value="C:/Users/DIYILIU/Desktop/FTP"/>
+    </bean>
+
+    <bean id="ftpJob" class="com.diyiliu.task.FTPJob">
+        <property name="ip" value="${ftp.ip}"/>
+        <property name="port" value="${ftp.port}"/>
+        <property name="username" value="${ftp.username}"/>
+        <property name="password" value="${ftp.password}"/>
+    </bean>
+
+    <bean id="simpleJob" class="com.diyiliu.task.SimpleJob"/>
+    <bean id="cronJob" class="com.diyiliu.task.CronJob"/>
+
+    <!-- 调度对象 -->
+    <bean id="ftpJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ftpJob"/>
+        <property name="targetMethod" value="execute"/>
+    </bean>
+
+
+    <bean id="simpleJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="simpleJob"/>
+        <property name="targetMethod" value="execute"/>
+    </bean>
+
+    <bean id="cronJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="cronJob"/>
+        <property name="targetMethod" value="execute"/>
+    </bean>
+
+    <!-- 定义触发器 (simpleTrigger与cronTrigger)-->
+
+    <bean id="simpleTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+        <property name="jobDetail" ref="simpleJobDetail"/>
+        <property name="startDelay" value="1000"/>
+        <property name="repeatInterval" value="30000"/>
+    </bean>
+
+    <bean id="cronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="ftpJobDetail"/>
+        <property name="startDelay" value="1000"/>
+        <property name="cronExpression" value="0/5 * * * * ?"/>
+    </bean>
+
+    <!-- 设置调度任务 -->
+    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <!--  <ref bean="simpleTrigger"/> -->
+                 <ref bean="cronTrigger"/>
+             </list>
+         </property>
+     </bean>
+ </beans>
